@@ -114,6 +114,40 @@ func (v visitFn) Visit(node ast.Node) ast.Visitor {
 	}
 }
 
+func genFuncDecl(mockTypeName string, methName string, method *ast.FuncType) *ast.FuncDecl {
+	f := &ast.FuncDecl{
+		Recv: &ast.FieldList{List: []*ast.Field{
+			{
+				Names: []*ast.Ident{ast.NewIdent("s")},
+				Type:  &ast.StarExpr{X: ast.NewIdent(mockTypeName)},
+			},
+		}},
+		Name: ast.NewIdent(methName),
+		Type: method,
+		Body: &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ExprStmt{
+				&ast.CallExpr{
+					Fun: &ast.SelectorExpr{
+						X:   ast.NewIdent("s"),
+						Sel: ast.NewIdent(methName + "_"),
+					},
+					Args:     fieldListToIdentList(method.Params),
+					Ellipsis: ellipsisIfNeeded(method.Params),
+				},
+			},
+		}},
+	}
+	if method.Results != nil {
+		f.Body = &ast.BlockStmt{List: []ast.Stmt{
+			&ast.ReturnStmt{
+				Results: []ast.Expr{f.Body.List[0].(*ast.ExprStmt).X},
+			},
+		}}
+	}
+
+	return f
+}
+
 func writeMockImplFiles(outDir, outPkg, ifacePkgName, ifacePkgPath string, svcIfaces []*ast.TypeSpec) error {
 	if err := os.MkdirAll(outDir, 0700); err != nil {
 		return err
@@ -150,28 +184,7 @@ func writeMockImplFiles(outDir, outPkg, ifacePkgName, ifacePkgPath string, svcIf
 					// TODO(sqs): check for import paths or dirs unequal, not pkg name
 					qualifyPkgRefs(meth, ifacePkgName)
 				}
-				decls[filename] = append(decls[filename], &ast.FuncDecl{
-					Recv: &ast.FieldList{List: []*ast.Field{
-						{
-							Names: []*ast.Ident{ast.NewIdent("s")},
-							Type:  &ast.StarExpr{X: ast.NewIdent(mockTypeName)},
-						},
-					}},
-					Name: ast.NewIdent(methField.Names[0].Name),
-					Type: meth,
-					Body: &ast.BlockStmt{List: []ast.Stmt{
-						&ast.ReturnStmt{Results: []ast.Expr{
-							&ast.CallExpr{
-								Fun: &ast.SelectorExpr{
-									X:   ast.NewIdent("s"),
-									Sel: ast.NewIdent(methField.Names[0].Name + "_"),
-								},
-								Args:     fieldListToIdentList(meth.Params),
-								Ellipsis: ellipsisIfNeeded(meth.Params),
-							},
-						}},
-					}},
-				})
+				decls[filename] = append(decls[filename], genFuncDecl(mockTypeName, methField.Names[0].Name, meth))
 			}
 		}
 
