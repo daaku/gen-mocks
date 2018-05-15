@@ -116,6 +116,14 @@ func (v visitFn) Visit(node ast.Node) ast.Visitor {
 
 func genFuncDecl(mockTypeName string, methName string, method *ast.FuncType) *ast.FuncDecl {
 	f := &ast.FuncDecl{
+		Doc: &ast.CommentGroup{
+			List: []*ast.Comment{
+				{
+					Text: fmt.Sprintf("// %s calls the associated mock implementation.",
+						methName),
+				},
+			},
+		},
 		Recv: &ast.FieldList{List: []*ast.Field{
 			{
 				Names: []*ast.Ident{ast.NewIdent("s")},
@@ -170,10 +178,21 @@ func writeMockImplFiles(outDir, outPkg, ifacePkgName, ifacePkgPath string, svcIf
 
 		// struct implementation type
 		mockTypeName := *namePrefix + iface.Name.Name
-		implType := &ast.GenDecl{Tok: token.TYPE, Specs: []ast.Spec{&ast.TypeSpec{
-			Name: ast.NewIdent(mockTypeName),
-			Type: &ast.StructType{Fields: &ast.FieldList{List: methFields}},
-		}}}
+		implType := &ast.GenDecl{
+			Doc: &ast.CommentGroup{
+				List: []*ast.Comment{
+					{
+						Text: fmt.Sprintf("// %s provides a mock implementation of %s.",
+							mockTypeName, iface.Name.Name),
+					},
+				},
+			},
+			Tok: token.TYPE,
+			Specs: []ast.Spec{&ast.TypeSpec{
+				Name: ast.NewIdent(mockTypeName),
+				Type: &ast.StructType{Fields: &ast.FieldList{List: methFields}},
+			}},
+		}
 		decls[filename] = append(decls[filename], implType)
 
 		// struct methods
