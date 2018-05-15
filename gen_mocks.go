@@ -129,7 +129,7 @@ func genFuncDecl(mockTypeName string, methName string, method *ast.FuncType) *as
 				&ast.CallExpr{
 					Fun: &ast.SelectorExpr{
 						X:   ast.NewIdent("s"),
-						Sel: ast.NewIdent(methName + "_"),
+						Sel: ast.NewIdent(methName + "F"),
 					},
 					Args:     fieldListToIdentList(method.Params),
 					Ellipsis: ellipsisIfNeeded(method.Params),
@@ -162,7 +162,7 @@ func writeMockImplFiles(outDir, outPkg, ifacePkgName, ifacePkgPath string, svcIf
 		for _, methField := range iface.Type.(*ast.InterfaceType).Methods.List {
 			if meth, ok := methField.Type.(*ast.FuncType); ok {
 				methFields = append(methFields, &ast.Field{
-					Names: []*ast.Ident{ast.NewIdent(methField.Names[0].Name + "_")},
+					Names: []*ast.Ident{ast.NewIdent(methField.Names[0].Name + "F")},
 					Type:  omitNoPassArgs(meth),
 				})
 			}
