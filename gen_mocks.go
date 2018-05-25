@@ -20,22 +20,22 @@ import (
 )
 
 var (
-	ifacePkgDir = flag.String("p", ".", "directory of package containing interface types")
-	ifacePat    = flag.String("i", ".+Service", "regexp pattern for selecting interface types by name")
-	writeFiles  = flag.Bool("w", false, "write over existing files in output directory (default: writes to stdout)")
-	outDir      = flag.String("o", ".", "output directory")
-	outPkg      = flag.String("outpkg", "", "output pkg name (default: same as input pkg)")
-	namePrefix  = flag.String("name_prefix", "Mock", "output: name prefix of mock impl types (e.g., T -> MockT)")
-	noPassArgs  = flag.String("no_pass_args", "", "don't pass args with this name from the interface method to the mock impl func")
+	importPath = flag.String("p", ".", "import path of package containing interface types")
+	ifacePat   = flag.String("i", ".+Service", "regexp pattern for selecting interface types by name")
+	writeFiles = flag.Bool("w", false, "write over existing files in output directory (default: writes to stdout)")
+	outDir     = flag.String("o", ".", "output directory")
+	outPkg     = flag.String("outpkg", "", "output pkg name (default: same as input pkg)")
+	namePrefix = flag.String("name_prefix", "Mock", "output: name prefix of mock impl types (e.g., T -> MockT)")
+	noPassArgs = flag.String("no_pass_args", "", "don't pass args with this name from the interface method to the mock impl func")
 
 	fset = token.NewFileSet()
 )
 
 func main() {
 	flag.Parse()
-	log.SetFlags(0)
+	log.SetFlags(log.Lshortfile)
 
-	bpkg, err := build.Import(*ifacePkgDir, ".", build.FindOnly)
+	bpkg, err := build.Import(*importPath, ".", build.FindOnly)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pkgs, err := parser.ParseDir(fset, *ifacePkgDir, nil, parser.AllErrors)
+	pkgs, err := parser.ParseDir(fset, bpkg.Dir, nil, parser.AllErrors)
 	if err != nil {
 		log.Fatal(err)
 	}
