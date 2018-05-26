@@ -27,6 +27,7 @@ var (
 	outPkg     = flag.String("outpkg", "", "output pkg name (default: same as input pkg)")
 	namePrefix = flag.String("name_prefix", "Mock", "output: name prefix of mock impl types (e.g., T -> MockT)")
 	noPassArgs = flag.String("no_pass_args", "", "don't pass args with this name from the interface method to the mock impl func")
+	testFile   = flag.Bool("test_file", false, "write a _test.go file")
 
 	fset = token.NewFileSet()
 )
@@ -156,6 +157,13 @@ func genFuncDecl(mockTypeName string, methName string, method *ast.FuncType) *as
 	return f
 }
 
+func filenameSuffix() string {
+	if *testFile {
+		return "_mock_test.go"
+	}
+	return "_mock.go"
+}
+
 func writeMockImplFiles(outDir, outPkg, ifacePkgName, ifacePkgPath string, svcIfaces []*ast.TypeSpec) error {
 	if err := os.MkdirAll(outDir, 0700); err != nil {
 		return err
@@ -163,7 +171,7 @@ func writeMockImplFiles(outDir, outPkg, ifacePkgName, ifacePkgPath string, svcIf
 	decls := map[string][]ast.Decl{} // file -> decls
 	for _, iface := range svcIfaces {
 		filename := fset.Position(iface.Pos()).Filename
-		filename = filepath.Join(outDir, strings.TrimSuffix(filepath.Base(filename), ".go")+"_mock.go")
+		filename = filepath.Join(outDir, strings.TrimSuffix(filepath.Base(filename), ".go")+filenameSuffix())
 
 		// mock method fields on struct
 		var methFields []*ast.Field
